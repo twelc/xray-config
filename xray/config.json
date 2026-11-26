@@ -1,6 +1,6 @@
 {
   "log": {
-    "loglevel": "debug"
+    "loglevel": "none"
   },
   "inbounds": [
     {
@@ -31,8 +31,8 @@
             },
             "xPaddingBytes": "100-1000",
             "noSSEHeader": false,
-            "scMaxEachPostBytes": 1000000,
-            "scMaxBufferedPosts": 30
+            "scMaxEachPostBytes": 2000000,
+            "scMaxBufferedPosts": 50
           }
         }
       }

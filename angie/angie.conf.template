@@ -34,6 +34,7 @@ http {
             proxy_pass http://xray:3000;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
+            proxy_set_header Connection "";
 
             # Критично для XHTTP: отключаем буферизацию и лимиты на размер тела запроса
             proxy_request_buffering off;
@@ -43,6 +44,12 @@ http {
             # Чтобы долгие потоки (stream-up / stream-one) не рвались по таймауту
             proxy_read_timeout 3600s;
             proxy_send_timeout 3600s;
+            client_body_timeout 3600s;
+            send_timeout 3600s;
+
+            http2_max_concurrent_streams 512;
+            http2_max_requests 100000;
+            keepalive_requests 100000;
     
         }
     }
