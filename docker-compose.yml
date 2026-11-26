@@ -1,6 +1,7 @@
 services:
 
   angie:
+    container_name: angie 
     restart: always
     ports:
       - "80:80"
