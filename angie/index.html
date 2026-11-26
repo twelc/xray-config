@@ -1,0 +1,466 @@
+<!-- Я навайбкодил это говно в гугле, не знаю даже работает или нет -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Client-side cryptographic key & password entropy analyzer">
+  <title>EntropyLab — Client-Side Key & Password Generator</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://w3.org' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M16 6L25 10V17C25 22.5 21.1 27.4 16 29C10.9 27.4 7 22.5 7 17V10L16 6Z' fill='none' stroke='%2338bdf8' stroke-width='2.5'/><circle cx='16' cy='16' r='3' fill='%2338bdf8'/></svg>">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #131a2a;
+      --border: #232f46;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    .output-box {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .output-text {
+      font-family: var(--mono);
+      font-size: 1.15rem;
+      color: #fff;
+      word-break: break-all;
+      flex: 1;
+      user-select: all;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: var(--sans);
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon {
+      background: #1e293b;
+      color: var(--text);
+      padding: 0.5rem 0.85rem;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    .btn-icon:hover {
+      background: #293548;
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0b0f19;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .meter-wrap {
+      margin-bottom: 1.5rem;
+    }
+
+    .meter-bar {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    .meter-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .controls {
+      display: grid;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .range-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .range-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .toggles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg);
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-item input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      background: transparent;
+      color: var(--muted);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+    }
+
+    .tab.active {
+      background: var(--bg);
+      color: var(--accent);
+      border-color: var(--border);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .info-box h3 {
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--good);
+      color: #064e3b;
+      font-weight: 600;
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+          <path d="M16 4L27 9V17C27 23.5 22.3 29.2 16 31C9.7 29.2 5 23.5 5 17V9L16 4Z" stroke="#38bdf8"
+            stroke-width="2.5" />
+          <circle cx="16" cy="16.5" r="3.5" fill="#38bdf8" />
+        </svg>
+        <span>EntropyLab</span>
+      </div>
+      <span class="badge">WebCrypto CSPRNG</span>
+    </header>
+
+    <main>
+      <div class="card">
+        <div class="tabs">
+          <button class="tab active" data-mode="password" onclick="setMode('password')">Password</button>
+          <button class="tab" data-mode="hex" onclick="setMode('hex')">Hex Key (256-bit)</button>
+          <button class="tab" data-mode="base64" onclick="setMode('base64')">Base64 Token</button>
+          <button class="tab" data-mode="uuid" onclick="setMode('uuid')">UUID v4</button>
+        </div>
+
+        <div class="output-box">
+          <div class="output-text" id="output">Generating...</div>
+          <button class="btn-icon" onclick="copyOutput()">Copy</button>
+        </div>
+
+        <div class="meter-wrap">
+          <div class="meter-bar">
+            <div class="meter-fill" id="meterFill"></div>
+          </div>
+          <div class="meter-stats">
+            <span id="entropyVal">Entropy: 0 bits</span>
+            <span id="crackTime">Est. crack: instant</span>
+          </div>
+        </div>
+
+        <div class="controls" id="passControls">
+          <div class="range-row">
+            <div class="range-header">
+              <span>Length</span>
+              <strong id="lenVal" style="font-family: var(--mono); color: var(--accent);">24</strong>
+            </div>
+            <input type="range" id="lenRange" min="8" max="64" value="24" oninput="updateLen(this.value)">
+          </div>
+
+          <div class="toggles">
+            <label class="toggle-item"><input type="checkbox" id="optUpper" checked onchange="generate()"> Uppercase
+              (A-Z)</label>
+            <label class="toggle-item"><input type="checkbox" id="optLower" checked onchange="generate()"> Lowercase
+              (a-z)</label>
+            <label class="toggle-item"><input type="checkbox" id="optNum" checked onchange="generate()"> Digits
+              (0-9)</label>
+            <label class="toggle-item"><input type="checkbox" id="optSym" checked onchange="generate()"> Symbols
+              (!@#$)</label>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="generate()">Regenerate Secret</button>
+      </div>
+
+      <div class="card info-grid">
+        <div class="info-box">
+          <h3>Zero Telemetry</h3>
+          <p>All operations run locally in your browser memory via <code>crypto.getRandomValues()</code>. Nothing is
+            transmitted over the network.</p>
+        </div>
+        <div class="info-box">
+          <h3>Uniform Distribution</h3>
+          <p>Rejection sampling eliminates modulo bias when mapping random 32-bit integers to custom character sets.</p>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      EntropyLab v1.4.2 &bull; Pure Static Client-Side Utility
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">Copied to clipboard</div>
+
+  <script>
+    let currentMode = 'password';
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.mode === mode);
+      });
+      document.getElementById('passControls').style.display = mode === 'password' ? 'grid' : 'none';
+      generate();
+    }
+
+    function updateLen(val) {
+      document.getElementById('lenVal').textContent = val;
+      generate();
+    }
+
+    function getRandomInt(max) {
+      const arr = new Uint32Array(1);
+      const limit = Math.floor(0x100000000 / max) * max;
+      let val;
+      do {
+        window.crypto.getRandomValues(arr);
+        val = arr[0];
+      } while (val >= limit);
+      return val % max;
+    }
+
+    function generate() {
+      let result = '';
+      let entropy = 0;
+
+      if (currentMode === 'password') {
+        const len = parseInt(document.getElementById('lenRange').value, 10);
+        let charset = '';
+        if (document.getElementById('optUpper').checked) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        if (document.getElementById('optLower').checked) charset += 'abcdefghijklmnopqrstuvwxyz';
+        if (document.getElementById('optNum').checked) charset += '0123456789';
+        if (document.getElementById('optSym').checked) charset += '!@#$%^&*()-_=+[]{}|;:,.<>?';
+
+        if (!charset) {
+          document.getElementById('optLower').checked = true;
+          charset = 'abcdefghijklmnopqrstuvwxyz';
+        }
+
+        for (let i = 0; i < len; i++) {
+          result += charset[getRandomInt(charset.length)];
+        }
+        entropy = Math.round(len * Math.log2(charset.length));
+      } else if (currentMode === 'hex') {
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        result = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        entropy = 256;
+      } else if (currentMode === 'base64') {
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        result = btoa(String.fromCharCode(...bytes));
+        entropy = 256;
+      } else if (currentMode === 'uuid') {
+        result = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = getRandomInt(16);
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        entropy = 122;
+      }
+      document.getElementById('output').textContent = result;
+      updateMeter(entropy);
+    }
+    function updateMeter(bits) {
+      document.getElementById('entropyVal').textContent = Entropy: ${bits} bits;
+      const fill = document.getElementById('meterFill');
+      const pct = Math.min(100, Math.round((bits / 160) * 100));
+      fill.style.width = pct + '%';
+      if (bits < 60) {
+        fill.style.backgroundColor = 'var(--bad)';
+        document.getElementById('crackTime').textContent = 'Est. crack: < 1 hour';
+      } else if (bits < 100) {
+        fill.style.backgroundColor = 'var(--warn)';
+        document.getElementById('crackTime').textContent = 'Est. crack: ~10^6 years';
+      } else {
+        fill.style.backgroundColor = 'var(--good)';
+        document.getElementById('crackTime').textContent = 'Est. crack: heat death of universe';
+      }
+    }
+    function copyOutput() {
+      const text = document.getElementById('output').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+      });
+    }
+    generate();
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,48 @@
+
+
+events {
+
+}
+
+http {
+
+    acme_client letsencrypt https://acme-v02.api.letsencrypt.org/directory;  
+    resolver 127.0.0.11;
+    
+    server {
+        listen 80;
+        server_name $DOMAIN_URL;
+        return 301 https://$DOMAIN_URL/$request_uri;
+        }
+        
+    server {
+        listen       443 ssl;
+
+        server_name $DOMAIN_URL;
+        acme letsencrypt;
+
+        ssl_certificate $acme_cert_letsencrypt;
+        ssl_certificate_key $acme_cert_key_letsencrypt;
+
+        location / {
+                root /var/www/html;
+                index index.html;
+                try_files $uri $uri/ =404;
+            }
+        location /public {
+            proxy_pass http://xray:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+
+            # Критично для XHTTP: отключаем буферизацию и лимиты на размер тела запроса
+            proxy_request_buffering off;
+            proxy_buffering off;
+            client_max_body_size 0;
+
+            # Чтобы долгие потоки (stream-up / stream-one) не рвались по таймауту
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+    
+        }
+    }
+}

@@ -1,0 +1,81 @@
+services:
+
+  angie:
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./angie/angie.conf.template:/etc/angie.conf.template:ro
+      - ./angie/acme:/var/lib/angie/acme/
+      - ./angie/index.html:/var/www/html/index.html
+            
+    depends_on:
+      - web
+    networks:
+      - app-network
+    build:
+      context: ./angie
+      dockerfile: Dockerfile
+      # задаем переменные среды
+      args:
+        DOMAIN_URL: ${DOMAIN_URL}
+    
+    env_file:
+      - .env
+    
+    logging:
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  warp:
+    container_name: warp
+    image: caomingjun/warp
+    restart: always
+    device_cgroup_rules:
+      - 'c 10:200 rwm'
+    logging:
+      options:
+        max-size: "50m"
+        max-file: "5"
+    environment:
+      - WARP_SLEEP=2
+      # - WARP_LICENSE_KEY= # optional
+      # - WARP_ENABLE_NAT=1 # enable nat
+    cap_add:
+      # Docker already have them, these are for podman users
+      - MKNOD
+      - AUDIT_WRITE
+      # additional required cap for warp, both for podman and docker
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+      # uncomment for nat
+      # - net.ipv4.ip_forward=1
+      # - net.ipv6.conf.all.forwarding=1
+      # - net.ipv6.conf.all.accept_ra=2
+    volumes:
+      - ./warp:/var/lib/cloudflare-warp
+    networks:
+      - app-network
+
+
+  xray:
+    container_name: xray
+    build: ./xray
+    restart: always
+    env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - app-network
+    volumes:    
+      - "./xray/config.json:/etc/xray/config.template.json"
+      - "./xray/geoip.dat:/usr/share/xray/geoip.dat"
+      - "./xray/geosite.dat:/usr/share/xray/geosite.dat"
+  
+networks:
+  app-network:
+    driver: bridge
