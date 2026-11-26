@@ -25,6 +25,10 @@ http {
         ssl_certificate $acme_cert_letsencrypt;
         ssl_certificate_key $acme_cert_key_letsencrypt;
 
+        http2_max_concurrent_streams 512;
+        http2_max_requests 100000;
+        keepalive_requests 100000;       
+ 
         location / {
                 root /var/www/html;
                 index index.html;
@@ -47,10 +51,6 @@ http {
             client_body_timeout 3600s;
             send_timeout 3600s;
 
-            http2_max_concurrent_streams 512;
-            http2_max_requests 100000;
-            keepalive_requests 100000;
-    
-        }
+           }
     }
 }
