@@ -10,8 +10,6 @@ services:
       - ./angie/acme:/var/lib/angie/acme/
       - ./angie/index.html:/var/www/html/index.html
             
-    depends_on:
-      - web
     networks:
       - app-network
     build:
